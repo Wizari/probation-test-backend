@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS products (
                                      id SERIAL PRIMARY KEY,
-                                     name VARCHAR(255) NOT NULL
+                                     title VARCHAR(255) NOT NULL
     );

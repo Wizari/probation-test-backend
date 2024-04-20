@@ -3,29 +3,22 @@ package com.gmail.wizaripost.probationtestbackend.entity
 import jakarta.persistence.*
 import org.hibernate.Hibernate
 
-@Table(name = "users")
+@Table(name = "products")
 @Entity
-data class User(
+data class Product(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     var id: Long? = null,
 
-    @Column(name = "name", nullable = false)
-    var name: String? = null,
-
-//    @OneToMany(mappedBy = "client", orphanRemoval = true)
-//    var projects: MutableSet<Project> = mutableSetOf(),
-//
-//    @JoinColumn(name = "client_id")
-//    @OneToMany
-//    var contacts: MutableSet<Contact> = mutableSetOf(),
+    @Column(name = "title", nullable = false)
+    var title: String? = null,
 ) {
     @Override
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || Hibernate.getClass(this) != Hibernate.getClass(other)) return false
-        other as User
+        other as Product
 
         return id != null && id == other.id
     }
@@ -35,6 +28,6 @@ data class User(
 
     @Override
     override fun toString(): String {
-        return this::class.simpleName + "(id = $id , name = $name )"
+        return this::class.simpleName + "(id = $id , title = $title )"
     }
 }
