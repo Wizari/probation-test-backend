@@ -24,15 +24,15 @@ class ProductsServices {
     }
 
     fun update(product: Product, id: Long): Product {
-        return if (product.id == id) {
-            productsRepository.save(product)
-        } else {
-            productsRepository.deleteById(id)
-            productsRepository.save(product)
-        }
+        val existingProduct = productsRepository.findById(id)
+            .orElseThrow { NoSuchElementException("Product with id $id not found") }
+        existingProduct.title = product.title
+        return productsRepository.save(existingProduct)
     }
 
     fun delete(id: Long) {
+        productsRepository.findById(id)
+            .orElseThrow { NoSuchElementException("Product with id $id not found") }
         productsRepository.deleteById(id)
     }
 

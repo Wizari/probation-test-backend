@@ -15,29 +15,26 @@ class Controller {
     @GetMapping("/api/products")
     fun getAll(): String {
         val retrievedProducts = productsServices.getAll()
-//        println(retrievedProducts)
         return "retrievedProducts: $retrievedProducts"
     }
 
     @GetMapping("/api/products/{id}")
     fun getById(@PathVariable id: Long): String {
         val retrievedProduct = productsServices.getById(id)
-//        println(retrievedProduct)
         return "retrievedProduct: $retrievedProduct"
     }
 
 
     @PostMapping("/api/products")
     fun  createProduct(@RequestBody product: Product): ResponseEntity<String> {
-        val newProduct = Product(id = product.id, title = product.title)
+        val newProduct = Product(title = product.title)
         val savedProduct = productsServices.save(newProduct)
-//        println(savedProduct)
         return ResponseEntity.ok("Продукт " + savedProduct + " создан!");
     }
 
     @PutMapping("/api/products/{id}")
     fun updateProduct(@RequestBody product: Product,@PathVariable id: Long): ResponseEntity<String> {
-        val newProduct = Product(id = product.id, title = product.title)
+        val newProduct = Product(title = product.title)
         val savedProduct = productsServices.update(newProduct, id)
         return ResponseEntity.ok("Продукт " + savedProduct + " обновлен!");
     }
