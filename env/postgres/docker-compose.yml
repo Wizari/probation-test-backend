@@ -1,62 +1,31 @@
-version: "3.9"
+version: '3'
+
 services:
-  keycloak-postgres:
-    image: library/postgres:${KC_POSTGRES_IMAGE_TAG:-14}
-    container_name: ${POSTGRES_CONTAINER_NAME:-postgres}
-    restart: on-failure
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    healthcheck:
-      test: pg_isready -d postgres
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-    #    volumes:
-    #      - postgres_data_keycloak:/var/lib/postgresql/data
-    ports:
-      - ${KC_POSTGRES_PORT_MAPPING:-5435}:5432
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-
   keycloak:
-    image: quay.io/keycloak/keycloak:20.0.2
-    container_name: keycloak
-    command:
-      - start --auto-build --db postgres --hostname-strict-https false --hostname-strict false --proxy edge --http-enabled true --import-realm --spi-user-profile-legacy-user-profile-read-only-attributes *_RES_ACCESS_MODE
+    image: quay.io/keycloak/keycloak:15.0.2
     environment:
-      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/postgres
-      KC_DB_USERNAME: postgres
-      KC_DB_PASSWORD: postgres
-      KC_DB_SCHEMA: public
-      KC_FEATURES: preview
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: password
-#    volumes:
-#      - type: bind
-#        source: ../../src/main/resources/keycloak/import/realm-export.json
-#        target: /opt/keycloak/data/import/realm-export.json
-#        read_only: true
-#      - type: bind
-#        source: ../../src/main/resources/keycloak/scripts/custom-scripts.jar
-#        target: /opt/keycloak/providers/custom-scripts.jar
-#        read_only: true
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=password
+      - DB_VENDOR=postgres
+      - DB_ADDR=db_keycloak
+      - DB_DATABASE=keycloak
+      - DB_USER=user
+      - DB_PASSWORD=password
     ports:
-      - 8282:8080
+      - "8282:8080"
     depends_on:
-      keycloak-postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://0.0.0.0:8080/realms/master"]
-      start_period: 10s
-      interval: 30s
-      retries: 3
-      timeout: 5s
+      - db_keycloak
 
+  db_keycloak:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./postgres_data_keycloak/data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
 
   db_main:
     image: postgres:15
@@ -64,9 +33,9 @@ services:
       - POSTGRES_DB=main
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-      - DB_PORT=5450
+#      - DB_PORT=5450
     volumes:
-      - postgres_data_main:/var/lib/postgresql/data
+      - ./postgres_data_main/data:/var/lib/postgresql/data
     ports:
       - "5451:5432"
 
@@ -74,30 +43,206 @@ volumes:
   postgres_data_keycloak:
   postgres_data_main:
 
-#services:
-#  keycloak:
-#    image: quay.io/keycloak/keycloak:15.0.2
-#    environment:
-#      - KEYCLOAK_USER=admin
-#      - KEYCLOAK_PASSWORD=password
-#      - DB_VENDOR=postgres
-#      - DB_ADDR=db_keycloak
-#      - DB_DATABASE=keycloak
-#      - DB_USER=user
-#      - DB_PASSWORD=password
-#    ports:
-#      - "8081:8080"
-#    depends_on:
-#      - db_keycloak
 
-#  db_keycloak:
+
+
+
+
+
+
+
+
+
+
+
+
+
+#version: "3.8"
+#
+#services:
+#  keycloak-postgres:
+#    container_name: keycloak_db
 #    image: postgres:15
 #    environment:
-#      - POSTGRES_DB=keycloak
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgres
+#      POSTGRES_DB: keycloak-postgres
+#    volumes:
+#      - ./postgres_data_keycloak:/var/lib/postgresql/data
+#    ports:
+#      - "5435:5432"
+#    restart: unless-stopped
+#
+#  keycloak:
+#    image: quay.io/keycloak/keycloak:20.0.2
+#    container_name: keycloak
+##    command:
+##      - start --auto-build --db postgres --hostname-strict-https false --hostname-strict false --proxy edge --http-enabled true --import-realm --spi-user-profile-legacy-user-profile-read-only-attributes *_RES_ACCESS_MODE
+##      - start
+##      - start --db postgres --db-url-host jdbc:postgresql://keycloak-postgres:5432/postgres --db-username postgres --db-password postgres
+#    environment:
+#      DB_VENDOR: POSTGRES
+#      DB_ADDR: postgres
+#      DB_DATABASE: keycloak_db
+#      DB_USER: postgres
+#      DB_PASSWORD: postgres
+#      KEYCLOAK_USER: admin
+#      KEYCLOAK_PASSWORD: admin_password
+#      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/postgres
+#      KC_DB_USERNAME: postgres
+#      KC_DB_PASSWORD: postgres
+##    volumes:
+##      - ./keycloak:/opt/keycloak/data
+#    ports:
+#      - "8282:8080"
+#    depends_on:
+#      - keycloak-postgres
+##    links:
+##      - "postgres:postgres"
+#
+#
+
+
+
+
+
+
+
+
+#version: "3.8"
+#
+#services:
+#  keycloak-postgres:
+#    image: postgres:15
+#    container_name: postgres
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgres
+#      POSTGRES_DB: postgres
+##    healthcheck:
+##      test: pg_isready -d postgres
+##      interval: 10s
+##      timeout: 5s
+##      retries: 3
+##      start_period: 5s
+#    ports:
+#      - "5435:5432"
+#    restart: unless-stopped
+#
+#  keycloak:
+##    image: jboss/keycloak
+#    image: quay.io/keycloak/keycloak:20.0.2
+#    container_name: keycloak
+#    environment:
+##      DB_VENDOR: POSTGRES
+##      DB_ADDR: postgres
+##      DB_DATABASE: keycloak_db
+##      DB_USER: admin
+##      DB_PASSWORD: password
+##      KEYCLOAK_USER: admin
+##      KEYCLOAK_PASSWORD: password
+#      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/postgres
+#      KC_DB_USERNAME: postgres
+#      KC_DB_PASSWORD: postgres
+##      KC_DB_SCHEMA: public
+##      KC_FEATURES: preview
+#      KEYCLOAK_ADMIN: admin
+#      KEYCLOAK_ADMIN_PASSWORD: password
+#    ports:
+#      - 8282:8080
+#    depends_on:
+#      - keycloak-postgres
+##      keycloak-postgres:
+##        condition: service_healthy
+##    links:
+##      - "postgres:postgres"
+##    healthcheck:
+##      test: ["CMD", "curl", "-f", "http://0.0.0.0:8080/realms/master"]
+##      start_period: 10s
+##      interval: 30s
+##      retries: 3
+##      timeout: 5s
+#
+#
+#
+#
+#
+
+
+
+#
+##version: "3.9"
+##services:
+#  keycloak-postgres:
+#    image: library/postgres:${KC_POSTGRES_IMAGE_TAG:-14}
+#    container_name: ${POSTGRES_CONTAINER_NAME:-postgres}
+#    restart: on-failure
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgres
+#      POSTGRES_DB: postgres
+#    healthcheck:
+#      test: pg_isready -d postgres
+#      interval: 10s
+#      timeout: 5s
+#      retries: 3
+#      start_period: 5s
+#    #    volumes:
+#    #      - postgres_data_keycloak:/var/lib/postgresql/data
+#    ports:
+#      - ${KC_POSTGRES_PORT_MAPPING:-5435}:5432
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 256M
+#
+#  keycloak:
+#    image: quay.io/keycloak/keycloak:20.0.2
+#    container_name: keycloak
+#    command:
+#      - start --auto-build --db postgres --hostname-strict-https false --hostname-strict false --proxy edge --http-enabled true --import-realm --spi-user-profile-legacy-user-profile-read-only-attributes *_RES_ACCESS_MODE
+#    environment:
+#      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/postgres
+#      KC_DB_USERNAME: postgres
+#      KC_DB_PASSWORD: postgres
+#      KC_DB_SCHEMA: public
+#      KC_FEATURES: preview
+#      KEYCLOAK_ADMIN: admin
+#      KEYCLOAK_ADMIN_PASSWORD: password
+##    volumes:
+##      - type: bind
+##        source: ../../src/main/resources/keycloak/import/realm-export.json
+##        target: /opt/keycloak/data/import/realm-export.json
+##        read_only: true
+##      - type: bind
+##        source: ../../src/main/resources/keycloak/scripts/custom-scripts.jar
+##        target: /opt/keycloak/providers/custom-scripts.jar
+##        read_only: true
+#    ports:
+#      - 8282:8080
+#    depends_on:
+#      keycloak-postgres:
+#        condition: service_healthy
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://0.0.0.0:8080/realms/master"]
+#      start_period: 10s
+#      interval: 30s
+#      retries: 3
+#      timeout: 5s
+#
+#
+#  db_main:
+#    image: postgres:15
+#    environment:
+#      - POSTGRES_DB=main
 #      - POSTGRES_USER=user
 #      - POSTGRES_PASSWORD=password
+#      - DB_PORT=5450
 #    volumes:
-#      - postgres_data_keycloak:/var/lib/postgresql/data
+#      - postgres_data_main:/var/lib/postgresql/data
 #    ports:
-#      - "5433:5432"
-
+#      - "5451:5432"
+#
+#volumes:
+#  postgres_data_keycloak:
+#  postgres_data_main:
