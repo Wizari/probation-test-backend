@@ -4,6 +4,7 @@ import com.gmail.wizaripost.probationtestbackend.entity.Product
 import com.gmail.wizaripost.probationtestbackend.services.ProductsServices
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -13,12 +14,14 @@ class Controller {
     private lateinit var productsServices: ProductsServices
 
     @GetMapping("/api/products")
+    @PreAuthorize("hasRole('ADMIN')")
     fun getAll(): String {
         val retrievedProducts = productsServices.getAll()
         return "retrievedProducts: $retrievedProducts"
     }
 
     @GetMapping("/api/products/{id}")
+//    @PreAuthorize("hasRole('user')")
     fun getById(@PathVariable id: Long): String {
         val retrievedProduct = productsServices.getById(id)
         return "retrievedProduct: $retrievedProduct"

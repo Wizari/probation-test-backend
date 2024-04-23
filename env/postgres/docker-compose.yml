@@ -1,31 +1,35 @@
-version: '3'
+version: '3.5'
+
 
 services:
-  keycloak:
-    image: quay.io/keycloak/keycloak:15.0.2
-    environment:
-      - KEYCLOAK_USER=admin
-      - KEYCLOAK_PASSWORD=password
-      - DB_VENDOR=postgres
-      - DB_ADDR=db_keycloak
-      - DB_DATABASE=keycloak
-      - DB_USER=user
-      - DB_PASSWORD=password
-    ports:
-      - "8282:8080"
-    depends_on:
-      - db_keycloak
 
-  db_keycloak:
+  keycloak-db:
     image: postgres:15
-    environment:
-      - POSTGRES_DB=keycloak
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
     volumes:
-      - ./postgres_data_keycloak/data:/var/lib/postgresql/data
+      - ./data/keycloak_postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+
+  keycloak:
+    restart: always
+    image: quay.io/keycloak/keycloak:21.1.1
+    command: -v start-dev --import-realm
+    environment:
+      KC_PROXY: edge
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_RELATIVE_PATH: auth
+      KC_HOSTNAME_PATH: auth
+    depends_on:
+      - keycloak-db
     ports:
-      - "5433:5432"
+      - "12355:8080"
 
   db_main:
     image: postgres:15
@@ -33,15 +37,15 @@ services:
       - POSTGRES_DB=main
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-#      - DB_PORT=5450
+    #      - DB_PORT=5450
     volumes:
       - ./postgres_data_main/data:/var/lib/postgresql/data
     ports:
       - "5451:5432"
 
-volumes:
-  postgres_data_keycloak:
-  postgres_data_main:
+#volumes:
+#  postgres_data_keycloak:
+#  postgres_data_main:
 
 
 
@@ -52,6 +56,65 @@ volumes:
 
 
 
+#ersion: '3'
+#
+#services:
+#  keycloak:
+#    image: quay.io/keycloak/keycloak:15.0.2
+#    environment:
+#      - KEYCLOAK_USER=admin
+#      - KEYCLOAK_PASSWORD=password
+#      - DB_VENDOR=postgres
+#      - DB_ADDR=db_keycloak
+#      - DB_DATABASE=keycloak
+#      - DB_USER=user
+#      - DB_PASSWORD=password
+#    volumes:
+#      - type: bind
+#        source: ../../src/main/resources/keycloak/import/realm-export.json
+#        target: /opt/keycloak/data/import/realm-export.json
+#        read_only: true
+#    ports:
+#      - "8282:8080"
+#    depends_on:
+#      - db_keycloak
+#
+#  db_keycloak:
+#    image: postgres:15
+#    environment:
+#      - POSTGRES_DB=keycloak
+#      - POSTGRES_USER=user
+#      - POSTGRES_PASSWORD=password
+#    volumes:
+#      - ./postgres_data_keycloak/data:/var/lib/postgresql/data
+#    ports:
+#      - "5433:5432"
+#
+#  db_main:
+#    image: postgres:15
+#    environment:
+#      - POSTGRES_DB=main
+#      - POSTGRES_USER=user
+#      - POSTGRES_PASSWORD=password
+##      - DB_PORT=5450
+#    volumes:
+#      - ./postgres_data_main/data:/var/lib/postgresql/data
+#    ports:
+#      - "5451:5432"
+#
+#volumes:
+#  postgres_data_keycloak:
+#  postgres_data_main:
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
 
 
 

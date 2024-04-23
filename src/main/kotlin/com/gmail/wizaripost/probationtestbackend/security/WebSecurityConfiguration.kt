@@ -1,74 +1,106 @@
 package com.gmail.wizaripost.probationtestbackend.security
 
-import org.keycloak.adapters.KeycloakConfigResolver
-import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver
-import org.keycloak.adapters.springsecurity.KeycloakConfiguration
-//import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter
-//import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter
-import org.springframework.beans.factory.annotation.Autowired
+import net.minidev.json.JSONArray
 import org.springframework.context.annotation.Bean
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
+import org.springframework.context.annotation.Configuration
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper
-import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy
-import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser
+import org.springframework.security.oauth2.core.oidc.user.OidcUser
+import org.springframework.security.web.SecurityFilterChain
+import java.util.stream.Collectors
 
 
-@KeycloakConfiguration
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-class WebSecurityConfiguration : KeycloakWebSecurityConfigurerAdapter {
-    override fun sessionAuthenticationStrategy(): SessionAuthenticationStrategy {
-        return NullAuthenticatedSessionStrategy()
-    }
-
-    @Autowired
-    fun configureGlobal(authManagerBuilder: AuthenticationManagerBuilder) {
-        val keycloakAuthenticationProvider = keycloakAuthenticationProvider()
-        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(SimpleAuthorityMapper())
-        authManagerBuilder.authenticationProvider(keycloakAuthenticationProvider)
+@Configuration
+//@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
+class WebSecurityConfiguration {
+    @Bean
+//    @Throws(Exception::class)
+    protected fun filterChain(http: HttpSecurity): SecurityFilterChain {
+        val newHttp = http
+            .authorizeHttpRequests { authorizeRequests ->
+                authorizeRequests
+                    .requestMatchers("/api/anonymous/**").permitAll()
+                    .anyRequest().authenticated()
+            }
+            .oauth2Login { oauth2Login ->
+                oauth2Login
+                    .userInfoEndpoint { userInfoEndpoint ->
+                        userInfoEndpoint
+                            .oidcUserService(this.oidcUserService())
+                    }
+            }
+        return newHttp.build();
     }
 
     @Bean
-    fun keycloakConfigResolver(): KeycloakConfigResolver {
-        return KeycloakSpringBootConfigResolver()
-    }
-
-    @Throws(Exception::class)
-    override fun configure(http: HttpSecurity) {
-        super.configure(http)
-        http
-            .authorizeRequests()
-            .antMatchers("/api/anonymous/**").permitAll()
-            .anyRequest().fullyAuthenticated()
+    fun oidcUserService(): OAuth2UserService<OidcUserRequest, OidcUser> {
+        val delegate = OidcUserService()
+        return OAuth2UserService { userRequest: OidcUserRequest? ->
+            val oidcUser = delegate.loadUser(userRequest)
+            val claims = oidcUser.claims
+            val groups = claims["groups"] as JSONArray?
+            val mappedAuthorities = groups!!.stream()
+                .map { role: Any ->
+                    SimpleGrantedAuthority(
+                        "ROLE_$role"
+                    )
+                }
+                .collect(Collectors.toSet())
+            DefaultOidcUser(mappedAuthorities, oidcUser.idToken, oidcUser.userInfo)
+        }
     }
 }
 
-//import org.springframework.context.annotation.Bean
-//import org.springframework.context.annotation.Configuration
-//import org.springframework.security.config.annotation.web.builders.HttpSecurity
-//import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-//import org.springframework.security.web.SecurityFilterChain
-
 
 //@Configuration
-//@EnableWebSecurity
-//class SecurityConfig {
-//
-//    @Bean
+//@EnableMethodSecurity(prePostEnabled = true)
+//class WebSecurityConfiguration {
+
+
+//}
+//    filterChain
+
+
 //    @Throws(Exception::class)
-//    fun filterChain(http: HttpSecurity): SecurityFilterChain {
+//    protected fun configure(http: HttpSecurity) {
 //        http
-//            .authorizeHttpRequests { authorizeRequests ->
+//            .authorizeHttpRequests{ authorizeRequests ->
 //                authorizeRequests
+//                    .requestMatchers("/api/anonymous/**").permitAll()
 //                    .anyRequest().authenticated()
 //            }
-//            .oauth2ResourceServer { oauth2ResourceServer ->
-//                oauth2ResourceServer
-//                    .jwt { }
+//            .oauth2Login { oauth2Login: OAuth2LoginConfigurer<HttpSecurity?> ->
+//                oauth2Login
+//                    .userInfoEndpoint(
+//                        Customizer { userInfoEndpoint ->
+//                            userInfoEndpoint
+//                                .oidcUserService(oidcUserService())
+//                        }
+//                    )
 //            }
-//        return http.build();
 //    }
 //
-//
+//    @Bean
+//    fun oidcUserService(): OAuth2UserService<OidcUserRequest, OidcUser> {
+//        val delegate = OidcUserService()
+//        return OAuth2UserService { userRequest: OidcUserRequest? ->
+//            val oidcUser = delegate.loadUser(userRequest)
+//            val claims = oidcUser.claims
+//            val groups = claims["groups"] as JSONArray?
+//            val mappedAuthorities = groups!!.stream()
+//                .map { role: Any ->
+//                    SimpleGrantedAuthority(
+//                        "ROLE_$role"
+//                    )
+//                }
+//                .collect(Collectors.toSet())
+//            DefaultOidcUser(mappedAuthorities, oidcUser.idToken, oidcUser.userInfo)
+//        }
+//    }
 //}
